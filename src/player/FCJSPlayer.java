@@ -81,11 +81,11 @@ public class FCJSPlayer
 	
     	String s=input.readLine();	
 		List<String> ls=Arrays.asList(s.split(" "));
-		if(ls.size()==2)
+		if(ls.size()==2) //indicates that opponent made a move
 		{
 			applyMove(ls, board, opponentNumber);
 		}
-		else if(ls.size()==1)
+		else if(ls.size()==1) //indicates that game ended
 		{
 			System.out.println("ggwp");
 			System.exit(0);
@@ -130,14 +130,16 @@ public class FCJSPlayer
 	
 	public static void main(String[] args) throws IOException 
 	{
-		testPlayer rp=new testPlayer();
-		System.out.println(rp.playerName);
+		FCJSPlayer us = new FCJSPlayer();
+		System.out.println(us.playerName);
 		while (true)
 		{
-			rp.processInput();
+			us.processInput();
 		}
 	}
 	
+	/* The tree we'll build / search over as we look for good moves.
+	 * */
 	private class boardStateNode
 	{
 		public Board b;
