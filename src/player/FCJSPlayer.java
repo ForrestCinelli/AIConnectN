@@ -1,5 +1,11 @@
 package player;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
+
 /* Questions for ta:
  * why does running referee cause an error?
  * how can our player know how much time it has to make a move? Similarly, how can our player know waht the size of the board is?
@@ -8,7 +14,8 @@ package player;
  * */
 
 public class FCJSPlayer {
-
+	public String playerName = "FCJS";
+	public int playerNumber;
 	public Board board; //current state of board
 	
 	public FCJSPlayer()
@@ -37,6 +44,52 @@ public class FCJSPlayer {
 	public int eval(Board b)
 	{
 		return 0;
+	}
+	
+	BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+	boolean first_move=false;
+	
+	public void processInput() throws IOException
+	{	
+	
+    	String s=input.readLine();	
+		List<String> ls=Arrays.asList(s.split(" "));
+		if(ls.size()==2){
+			System.out.println(ls.get(0)+" "+ls.get(1));
+		}
+		else if(ls.size()==1){
+			System.out.println("game over!!!");
+			System.exit(0);
+		}
+		else if(ls.size()==5){          //ls contains game info
+			board = new Board(Integer.parseInt(ls.get(0)), //height 
+							  Integer.parseInt(ls.get(1)), //width
+							  Integer.parseInt(ls.get(2))  //N
+							  );
+			System.out.println("0 1");  //first move
+		}
+		else if(ls.size()==4){		//player1: aa player2: bb
+			if (ls.get(1).equals(playerName))
+			{
+				playerNumber = 1;
+			}
+			else 
+			{
+				playerNumber = 2;
+			}
+		}
+		else
+			System.out.println("not an input I understand");
+	}
+	
+	public static void main(String[] args) throws IOException 
+	{
+		testPlayer rp=new testPlayer();
+		System.out.println(rp.playerName);
+		while (true)
+		{
+			rp.processInput();
+		}
 	}
 	
 	private class boardStateNode
