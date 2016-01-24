@@ -57,11 +57,13 @@ public class FCJSPlayer
 	public void search()
 	{
 		int i = 0;
+		/*
 		while (true) //while we still have time
 		{
 		
 			i++;
 		}
+		*/
 		
 	}
 	
