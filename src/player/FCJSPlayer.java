@@ -69,6 +69,7 @@ public class FCJSPlayer
 			b.removeADiscFromBottom(Integer.parseInt(move.get(0)));
 		}
 		this.writer.println(this.board.toString());
+		writer.flush();
 	}
 	
 	public double timeRemaining()
@@ -82,12 +83,12 @@ public class FCJSPlayer
 		int depth = 0;
 		while (this.timeRemaining() > timeBuffer) //while we still have time
 		{
-			for (ArrayList<String> move : this.getValidMoves(board, this.playerNumber))
+			for (ArrayList<String> move : this.getValidMoves(board, this.playerNumber)) //for each valid move we can take
 			{
 				double val = minimax(this.bs, depth, true);
 				if (val > this.currentBestMoveValue)
 				{
-					this.currentBestMove = move; //might cause currentBestMove to end up being null; better watch out for that
+					this.currentBestMove = (List<String>) move.clone(); //clone is used to make the item persist after the for loop terminates. Idk if this is necessary or not.
 					this.currentBestMoveValue = val;
 				}
 			}
@@ -112,16 +113,16 @@ public class FCJSPlayer
 			if (b.canDropADiscFromTop(j, playerNum))
 			{
 				ArrayList<String> move = new ArrayList<String>(2);
-				move.add(0, Integer.toString(this.DROP));
 				move.add(1, Integer.toString(j));
+				move.add(0, Integer.toString(this.DROP));
 				output.add(move);
 			}
 			//pop out
 			if (canPopOut(playerNum) && b.canRemoveADiscFromBottom(j, playerNum))
 			{
 				ArrayList<String> move = new ArrayList<String>(2);
-				move.add(0, Integer.toString(this.POPOUT));
 				move.add(1, Integer.toString(j));
+				move.add(0, Integer.toString(this.POPOUT));
 				output.add(move);
 			}
 		}
@@ -205,6 +206,7 @@ public class FCJSPlayer
 	public void makeNextMove()
 	{
 		this.writer.println("Getting ready to make a move!!");
+		this.writer.flush();
 		System.out.println(String.join(" ", this.currentBestMove));  //first move
 		applyMove(currentBestMove, this.board, this.playerNumber);
 		if (!this.weHaveUsedPopOut && this.currentBestMove.get(0).equals(Integer.toString(this.POPOUT))) this.weHaveUsedPopOut = true;
