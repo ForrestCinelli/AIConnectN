@@ -1,5 +1,6 @@
 /** @author Forrest Cinelli
  *  @author Jingwei Shen
+ *  due Jan 24, 2015
  * */
 
 package player;
