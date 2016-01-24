@@ -25,15 +25,16 @@ public class FCJSPlayer
 	public Board board; //current state of board
 	BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 	boolean first_move=false;
-	float timeLimit; //in seconds
-	float turnStart; //in seconds
+	int timeLimit; //in seconds
+	long turnStart; //in nanoseconds
 	List<String> currentBestMove = Arrays.asList("0 1".split(" ")); //move formatting: first number is column to move in. (the first column is numbered 0, and the last is width - 1). Second number is move type: 0 means pop out and 1 means drop in. 
+	double currentBestMoveValue = Double.NEGATIVE_INFINITY;
 	BoardStateNode bs;
 	boolean weHaveUsedPopOut = false;
 	boolean theyHaveUsedPopOut = false;
 	
 	//params - these are things we can change to tweak the behavior of our player
-	public final float timeBuffer = 0.05f; //in seconds
+	public final double timeBuffer = 0.05; //in seconds
 	public final double tieVal = 0.0;
 	
 	public FCJSPlayer()
@@ -54,18 +55,28 @@ public class FCJSPlayer
 		}
 	}
 	
+	public double timeRemaining()
+	{
+		return (this.timeLimit * 1000000000) - (System.nanoTime() - this.turnStart);
+	}
+	
 	/*builds and expands the search tree*/
 	public void search()
 	{
-		int i = 0;
-		/*
-		while (true) //while we still have time
+		int depth = 0;
+		while (this.timeRemaining() > timeBuffer) //while we still have time
 		{
-		
-			i++;
+			for (ArrayList<String> move : this.getValidMoves(board, this.playerNumber))
+			{
+				double val = minimax(this.bs, depth, true);
+				if (val > this.currentBestMoveValue)
+				{
+					this.currentBestMove = move; //might cause currentBestMove to end up being null; better watch out for that
+					this.currentBestMoveValue = val;
+				}
+			}
+			depth++;
 		}
-		*/
-		
 	}
 	
 	public boolean canPopOut(int playerNum)
@@ -175,10 +186,11 @@ public class FCJSPlayer
 	
 	/* should be ready to return a move at any moment.*/
 	//this needs to be implemented differently; to allow for time limiting, and also to not waste time updating our own board before the move is sent out.
-	public List<String> getNextMove()
+	public void makeNextMove()
 	{
-		applyMove(currentBestMove, board, playerNumber);
-		return currentBestMove;
+		System.out.println(String.join(" ", this.currentBestMove));  //first move
+		applyMove(currentBestMove, this.board, this.playerNumber);
+		this.currentBestMoveValue = Double.NEGATIVE_INFINITY;
 	}
 	
 	/* Does alpha beta pruning */
@@ -219,10 +231,11 @@ public class FCJSPlayer
 		List<String> ls=Arrays.asList(s.split(" "));
 		if(ls.size()==2) //indicates that opponent made a move
 		{
+			this.turnStart = System.nanoTime();
 			applyMove(ls, board, opponentNumber);
 			pruneAfterMove(ls);
 			search(); //should terminate before time runs out
-			System.out.println(String.join(" ", this.getNextMove()));
+			this.makeNextMove();
 		}
 		else if(ls.size()==1) //indicates that game ended
 		{
@@ -240,9 +253,7 @@ public class FCJSPlayer
 			{
 				this.first_move = true;
 				//right now this is not correct. We need to return before time is up. 
-				List<String> move = this.getNextMove();
-				System.out.println(String.join(" ", move));  //first move
-				applyMove(move, this.board, this.playerNumber);
+				this.makeNextMove(); //first move
 			}
 			else
 			{
