@@ -7,6 +7,7 @@ package player;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,8 +24,16 @@ public class FCJSPlayer
 	public Board board; //current state of board
 	BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 	boolean first_move=false;
-	int timeLimit; //in seconds
+	float timeLimit; //in seconds
+	float turnStart; //in seconds
 	List<String> currentBestMove = Arrays.asList("0 1".split(" ")); //move formatting: first number is column to move in. (the first column is numbered 0, and the last is width - 1). Second number is move type: 0 means pop out and 1 means drop in. 
+	BoardStateNode bs;
+	boolean weHaveUsedPopOut = false;
+	boolean theyHaveUsedPopOut = false;
+	
+	//params - these are things we can change to tweak the behavior of our player
+	public final float timeBuffer = 0.05f; //in seconds
+	public final double tieVal = 0.0;
 	
 	public FCJSPlayer()
 	{
@@ -36,20 +45,137 @@ public class FCJSPlayer
 	{
 		if (Integer.parseInt(move.get(1)) == 0) //if move is a drop in
 		{
-			board.dropADiscFromTop(Integer.parseInt(move.get(0)), opponentNumber);
+			b.dropADiscFromTop(Integer.parseInt(move.get(0)), opponentNumber);
 		}
 		else //move is a pop out
 		{
-			board.removeADiscFromBottom(Integer.parseInt(move.get(0)));
+			b.removeADiscFromBottom(Integer.parseInt(move.get(0)));
+		}
+	}
+	
+	/*builds and expands the search tree*/
+	public void search()
+	{
+		int i = 0;
+		while (true) //while we still have time
+		{
+		
+			i++;
+		}
+		
+	}
+	
+	public boolean canPopOut(int playerNum)
+	{
+		if (playerNum == this.playerNumber)
+			return this.weHaveUsedPopOut;
+		else
+			return this.theyHaveUsedPopOut;
+	}
+	
+	public ArrayList<ArrayList<String>> getValidMoves(Board b, int playerNum)
+	{
+		ArrayList<ArrayList<String>> output = new ArrayList<ArrayList<String>>();
+		for (int j = 0; j < b.width; j++)
+		{
+			//drop in
+			if (b.canDropADiscFromTop(j, playerNum))
+			{
+				ArrayList<String> move = new ArrayList<String>(2);
+				move.add(0, "0");
+				move.add(1, Integer.toString(j));
+				output.add(move);
+			}
+			//pop out
+			if (canPopOut(playerNum) && b.canRemoveADiscFromBottom(j, playerNum))
+			{
+				ArrayList<String> move = new ArrayList<String>(2);
+				move.add(0, "1");
+				move.add(1, Integer.toString(j));
+				output.add(move);
+			}
+		}
+		return output;
+	}
+	
+	public double minimax(BoardStateNode node, int depth, boolean isMax)
+	{
+		int result = node.b.isConnectN();
+		if (result != -1)
+		{
+			if (result == this.playerNumber) //winning board state
+			{
+				return Double.POSITIVE_INFINITY;
+			}
+			if (result == 0) //tie
+			{
+				return this.tieVal;
+			}
+			if (result == this.opponentNumber) //losing board state
+			{
+				return Double.NEGATIVE_INFINITY;
+			}
+		}
+		if (depth == 0)
+		{
+			return eval(node.b);
+		}
+		if (isMax)
+		{
+			double bestValue = Double.NEGATIVE_INFINITY;
+			for (List<String> move: this.getValidMoves(node.b, isMax ? this.playerNumber : this.opponentNumber))
+			{
+				//make child board, 
+				Board newB = new Board(this.board.height, this.board.width, this.board.N);
+				for (int i = 0; i < node.b.board.length; i++) //for each row
+				{
+					System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
+				}
+				applyMove(move, newB, isMax ? this.playerNumber : this.opponentNumber);
+				
+				BoardStateNode newChild = new BoardStateNode(newB);
+				node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
+				 
+				double val = minimax(newChild, depth - 1, !isMax);
+				if (bestValue < val)
+				{
+					bestValue = val;
+				}
+			}
+			return bestValue;
+		}
+		else //is min
+		{
+			double bestValue = Double.POSITIVE_INFINITY;
+			for (List<String> move: this.getValidMoves(node.b, isMax ? this.playerNumber : this.opponentNumber))
+			{
+				//make child board, 
+				Board newB = new Board(this.board.height, this.board.width, this.board.N);
+				for (int i = 0; i < node.b.board.length; i++) //for each row
+				{
+					System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
+				}
+				applyMove(move, newB, isMax ? this.playerNumber : this.opponentNumber);
+				
+				BoardStateNode newChild = new BoardStateNode(newB);
+				node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
+				 
+				double val = minimax(newChild, depth - 1, !isMax);
+				if (bestValue > val)
+				{
+					bestValue = val;
+				}
+			}
+			return bestValue;
 		}
 	}
 	
 	/* should be ready to return a move at any moment.*/
 	//this needs to be implemented differently; to allow for time limiting, and also to not waste time updating our own board before the move is sent out.
-	public String getNextMove()
+	public List<String> getNextMove()
 	{
 		applyMove(currentBestMove, board, playerNumber);
-		return String.join(" ", currentBestMove);
+		return currentBestMove;
 	}
 	
 	/* Does alpha beta pruning */
@@ -59,11 +185,18 @@ public class FCJSPlayer
 	}
 	
 	/* After player hears about opponent move, prune each part of the decision tree that is no longer reachable since the opponent chose a different move
-	 * 
+	 * Assumes that local board has already been updated
 	 * */
-	public void pruneAfterMove()
+	public void pruneAfterMove(List<String> move)
 	{
-		
+		for (int i = 0; i < this.bs.children.size(); i++)
+		{
+			if ((this.bs.children.get(i).b).equals(this.board))
+			{
+				this.bs = this.bs.children.get(i);
+				return; //end execution immediately
+			}
+		}
 	}
 
 	/* do we need a separate function to determine if a board state is a 'game over' state?
@@ -84,6 +217,9 @@ public class FCJSPlayer
 		if(ls.size()==2) //indicates that opponent made a move
 		{
 			applyMove(ls, board, opponentNumber);
+			pruneAfterMove(ls);
+			search(); //should terminate before time runs out
+			System.out.println(String.join(" ", this.getNextMove()));
 		}
 		else if(ls.size()==1) //indicates that game ended
 		{
@@ -92,22 +228,26 @@ public class FCJSPlayer
 		}
 		else if(ls.size()==5)
 		{          //ls contains game info
-			board = new Board(Integer.parseInt(ls.get(0)), //height 
+			this.board = new Board(Integer.parseInt(ls.get(0)), //height 
 							  Integer.parseInt(ls.get(1)), //width
 							  Integer.parseInt(ls.get(2))  //N
 							  );
+			this.bs = new BoardStateNode(this.board);
 			if (Integer.parseInt(ls.get(3)) == playerNumber) //whose move is it first
 			{
-				first_move = true;
+				this.first_move = true;
+				//right now this is not correct. We need to return before time is up. 
+				List<String> move = this.getNextMove();
+				System.out.println(String.join(" ", move));  //first move
+				applyMove(move, this.board, this.playerNumber);
 			}
 			else
 			{
-				first_move = false;
+				this.first_move = false;
 			}
-			timeLimit = Integer.parseInt(ls.get(4));
+			this.timeLimit = Integer.parseInt(ls.get(4));
 			
-			//right now this is not correct. We need to return before time is up. 
-			System.out.println(this.getNextMove());  //first move
+			
 		}
 		else if(ls.size()==4)
 		{		//player1: aa player2: bb
@@ -140,14 +280,16 @@ public class FCJSPlayer
 	
 	/* The tree we'll build / search over as we look for good moves.
 	 * */
-	private class boardStateNode
+	private class BoardStateNode
 	{
 		public Board b;
-		public boardStateNode[] children;
-		public boardStateNode(Board b)
+		public ArrayList<BoardStateNode> children;
+		public BoardStateNode(Board b)
 		{
 			this.b = b;
-			this.children = new boardStateNode[4];//board.width
+			this.children = new ArrayList<BoardStateNode>(1);
 		}
+		
+		
 	} 
 }
