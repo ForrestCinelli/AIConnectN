@@ -246,7 +246,7 @@ public class FCJSPlayer
 		int dropOrPop = Integer.parseInt(bsn.move.get(1)); //0 for pop
 		if(dropOrPop == 1){//drop
 			int y = bsn.b.numOfDiscsInColumn[x] - 1;
-			eva = evalverti(x,y,bsn.currPlayer,bsn.b)+evalhori(x,y,bsn.currPlayer,bsn.b);
+			eva = evalverti(x,y,bsn.currPlayer,bsn.b)+evalhori(x,y,bsn.currPlayer,bsn.b)+evaldiag(x,y,bsn.currPlayer,bsn.b)+evaldiag2(x,y,bsn.currPlayer,bsn.b);
 			return eva;
 		}else{
 			return 0;
