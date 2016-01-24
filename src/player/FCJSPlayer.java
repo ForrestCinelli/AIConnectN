@@ -8,9 +8,11 @@ package player;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 /* Questions for ta:
  * can we modify board.java?
@@ -32,20 +34,33 @@ public class FCJSPlayer
 	BoardStateNode bs;
 	boolean weHaveUsedPopOut = false;
 	boolean theyHaveUsedPopOut = false;
+	PrintWriter writer;
+	final int POPOUT = 0;
+	final int DROP = 1;
 	
 	//params - these are things we can change to tweak the behavior of our player
-	public final double timeBuffer = 0.05; //in seconds
+	public final double timeBuffer = 0.1; //in seconds
 	public final double tieVal = 0.0;
 	
 	public FCJSPlayer()
 	{
-		
+		Random random = new Random();
+		int num = random.nextInt(10000);
+		try
+		{
+			this.writer = new PrintWriter("FCJSPlayer" + Integer.toString(num) + "output.txt", "UTF-8");
+		} catch (Exception e)
+		{
+			System.out.println("Couldn't make output file for some reason. Will crash soon.");
+			e.printStackTrace();
+		}
+		playerName += Integer.toString(num);
 	}
 	
 	//given a move, apply it to our board. Should happen after opponent declares move but before we begin searching the game tree and again after a move is returned.
 	public void applyMove(List<String> move, Board b, int player)
 	{
-		if (Integer.parseInt(move.get(1)) == 0) //if move is a drop in
+		if (Integer.parseInt(move.get(1)) == this.DROP) //if move is a drop in
 		{
 			b.dropADiscFromTop(Integer.parseInt(move.get(0)), opponentNumber);
 		}
@@ -53,6 +68,7 @@ public class FCJSPlayer
 		{
 			b.removeADiscFromBottom(Integer.parseInt(move.get(0)));
 		}
+		this.writer.println(this.board.toString());
 	}
 	
 	public double timeRemaining()
@@ -96,7 +112,7 @@ public class FCJSPlayer
 			if (b.canDropADiscFromTop(j, playerNum))
 			{
 				ArrayList<String> move = new ArrayList<String>(2);
-				move.add(0, "0");
+				move.add(0, Integer.toString(this.DROP));
 				move.add(1, Integer.toString(j));
 				output.add(move);
 			}
@@ -104,7 +120,7 @@ public class FCJSPlayer
 			if (canPopOut(playerNum) && b.canRemoveADiscFromBottom(j, playerNum))
 			{
 				ArrayList<String> move = new ArrayList<String>(2);
-				move.add(0, "1");
+				move.add(0, Integer.toString(this.POPOUT));
 				move.add(1, Integer.toString(j));
 				output.add(move);
 			}
@@ -145,9 +161,9 @@ public class FCJSPlayer
 				{
 					System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
 				}
-				applyMove(move, newB, isMax ? this.playerNumber : this.opponentNumber);
+				applyMove(move, newB, this.playerNumber);
 				
-				BoardStateNode newChild = new BoardStateNode(newB);
+				BoardStateNode newChild = new BoardStateNode(newB, move, this.playerNumber);
 				node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
 				 
 				double val = minimax(newChild, depth - 1, !isMax);
@@ -169,9 +185,9 @@ public class FCJSPlayer
 				{
 					System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
 				}
-				applyMove(move, newB, isMax ? this.playerNumber : this.opponentNumber);
+				applyMove(move, newB, this.opponentNumber);
 				
-				BoardStateNode newChild = new BoardStateNode(newB);
+				BoardStateNode newChild = new BoardStateNode(newB, move, this.opponentNumber);
 				node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
 				 
 				double val = minimax(newChild, depth - 1, !isMax);
@@ -188,9 +204,10 @@ public class FCJSPlayer
 	//this needs to be implemented differently; to allow for time limiting, and also to not waste time updating our own board before the move is sent out.
 	public void makeNextMove()
 	{
+		this.writer.println("Getting ready to make a move!!");
 		System.out.println(String.join(" ", this.currentBestMove));  //first move
 		applyMove(currentBestMove, this.board, this.playerNumber);
-		if (this.currentBestMove.get(0).equals("1")) this.weHaveUsedPopOut = true;
+		if (!this.weHaveUsedPopOut && this.currentBestMove.get(0).equals(Integer.toString(this.POPOUT))) this.weHaveUsedPopOut = true;
 		this.currentBestMoveValue = Double.NEGATIVE_INFINITY;
 	}
 	
@@ -207,9 +224,9 @@ public class FCJSPlayer
 	{
 		for (int i = 0; i < this.bs.children.size(); i++)
 		{
-			if ((this.bs.children.get(i).b).equals(this.board))
+			if ((this.bs.children.get(i).move).equals(move))
 			{
-				this.bs = this.bs.children.get(i);
+				this.bs = this.bs.children.get(i); //TODO: this line may not work as intended. Be suspicious
 				return; //end execution immediately
 			}
 		}
@@ -233,7 +250,7 @@ public class FCJSPlayer
 		if(ls.size()==2) //indicates that opponent made a move
 		{
 			this.turnStart = System.nanoTime();
-			if (ls.get(0).equals("1")) this.theyHaveUsedPopOut = true;
+			if (!this.theyHaveUsedPopOut && ls.get(0).equals(Integer.toString(this.POPOUT))) this.theyHaveUsedPopOut = true;
 			applyMove(ls, board, this.opponentNumber);
 			pruneAfterMove(ls);
 			search(); //should terminate before time runs out
@@ -250,16 +267,18 @@ public class FCJSPlayer
 							  Integer.parseInt(ls.get(1)), //width
 							  Integer.parseInt(ls.get(2))  //N
 							  );
-			this.bs = new BoardStateNode(this.board);
 			if (Integer.parseInt(ls.get(3)) == playerNumber) //whose move is it first
 			{
 				this.first_move = true;
+				//just move in the middle.
+				this.currentBestMove = Arrays.asList((Integer.toString((this.board.width/2)) + " 1").split(" "));
 				this.makeNextMove(); //first move
 			}
 			else
 			{
 				this.first_move = false;
 			}
+			this.bs = new BoardStateNode(this.board, null, this.first_move ? this.playerNumber : this.opponentNumber);
 			this.timeLimit = Integer.parseInt(ls.get(4));
 			
 			
@@ -298,11 +317,15 @@ public class FCJSPlayer
 	private class BoardStateNode
 	{
 		public Board b;
+		public List<String> move;
 		public ArrayList<BoardStateNode> children;
-		public BoardStateNode(Board b)
+		public int currPlayer;
+		public BoardStateNode(Board b, List<String> move, int currPlayer)
 		{
 			this.b = b;
 			this.children = new ArrayList<BoardStateNode>(1);
+			this.move = move;
+			this.currPlayer = currPlayer;
 		}
 		
 		
