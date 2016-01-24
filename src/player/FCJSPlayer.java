@@ -190,6 +190,7 @@ public class FCJSPlayer
 	{
 		System.out.println(String.join(" ", this.currentBestMove));  //first move
 		applyMove(currentBestMove, this.board, this.playerNumber);
+		if (this.currentBestMove.get(0).equals("1")) this.weHaveUsedPopOut = true;
 		this.currentBestMoveValue = Double.NEGATIVE_INFINITY;
 	}
 	
@@ -232,7 +233,8 @@ public class FCJSPlayer
 		if(ls.size()==2) //indicates that opponent made a move
 		{
 			this.turnStart = System.nanoTime();
-			applyMove(ls, board, opponentNumber);
+			if (ls.get(0).equals("1")) this.theyHaveUsedPopOut = true;
+			applyMove(ls, board, this.opponentNumber);
 			pruneAfterMove(ls);
 			search(); //should terminate before time runs out
 			this.makeNextMove();
@@ -252,7 +254,6 @@ public class FCJSPlayer
 			if (Integer.parseInt(ls.get(3)) == playerNumber) //whose move is it first
 			{
 				this.first_move = true;
-				//right now this is not correct. We need to return before time is up. 
 				this.makeNextMove(); //first move
 			}
 			else
