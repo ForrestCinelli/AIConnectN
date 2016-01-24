@@ -1,0 +1,45 @@
+	public FCJSPlayer()
+	{	
+		/*Board nb = new Board();
+		copyBoard(Board,nb);
+		if(playerNumber == 1){
+			String cbm = (Board.N - 2) + " 1"; 
+			currentBestMove.add(cbm);		
+			applyMove(currentBestMove, nb, playerNumber);
+			search(b0);
+		}*/
+		
+		search();
+		
+	}
+	
+	public search(){
+
+		List<String> move = Arrays.asList("0 1".split(" "));
+		int[Board.width] moveAndU;
+		maxPlayer(Board);
+		
+	}
+	
+	
+	
+	public int maxPlayer(Board b0){
+		int u = -10000;
+		Board nb = new Board();
+		copyBoard(b0,nb);
+		for(int i = 0; i < Board.width; i++){
+			for(int j=1)
+			String tempmove = i + " 1";
+			move.add(tempmove);
+			applyMove(move, nb, playerNumber);
+		}
+	}
+	
+	public int potential(){
+		
+	}
+	
+	public int minPlayer(){
+		
+		
+	}
