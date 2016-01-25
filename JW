@@ -246,21 +246,30 @@ public class FCJSPlayer
 		int dropOrPop = Integer.parseInt(bsn.move.get(1)); //0 for pop
 		if(dropOrPop == 1){//drop
 			int y = bsn.b.numOfDiscsInColumn[x] - 1;
-			eva = evalverti(x,y,bsn.currPlayer,bsn.b)+evalhori(x,y,bsn.currPlayer,bsn.b);
+			eva = evalverti(x,y,bsn.currPlayer,bsn.b,true)+evalhori(x,y,bsn.currPlayer,bsn.b,true)+evaldiag(x,y,bsn.currPlayer,bsn.b,true)+evaldiag2(x,y,bsn.currPlayer,bsn.b,true);
 			return eva;
-		}else{
+		}else{//pop
 			return 0;
 		}
 	}
 	
-	int evalverti(int x, int y, int player, Board b){
+	int evalverti(int x, int y, int player, Board b, Boolean opp){
 		
 		int eva = 0;
 		int samedisc = 0;
 		int up = 1;
-		while(b.board[y+up][x]==player && b.board[y+up][x]==b.emptyCell || up < b.N || y+up < b.height){//prob mistake here
+		int opponent = 0;
+		if(player == 2){
+			opponent = 1;
+		}else{
+			opponent = 2;
+		}
+		
+		while(b.board[y+up][x]==player || b.board[y+up][x]==b.emptyCell || up < b.N || y+up < b.height){//prob mistake here
 			if(b.board[y+up][x]==player){
 				samedisc++;
+			}else if(b.board[y+up][x]!=player && b.board[y+up][x]==b.emptyCell && opp){//reward block opponent
+				eva += evalverti(x,y+up,opponent,b,false);
 			}
 			up++;
 		}
@@ -269,25 +278,36 @@ public class FCJSPlayer
 		while(b.board[y-down][x]==player || b.board[y-down][x]==b.emptyCell || up < b.N || y-down >= 0){//prob mistake here
 			if(b.board[y-down][x]==player){
 				samedisc++;
+			}else if(b.board[y+up][x]!=player && b.board[y+up][x]==b.emptyCell && opp){//reward block opponent
+				eva += evalverti(x,y-down,opponent,b,false);
 			}
 			down++;
 		}
 		down--;
 		if((up + down) < (b.N - 1)){
-			return 0;
+			return eva;
 		}
 		eva = up + down - 3 + samedisc;
 		return eva;
 	}
 	
-	int evalhori(int x, int y, int player, Board b){
+	int evalhori(int x, int y, int player, Board b,Boolean opp){
 		
 		int eva = 0;
 		int samedisc = 0;
 		int left = 1;
-		while(b.board[y][x-left]==player && b.board[y][x-left]==b.emptyCell || left < b.N || x-left >= 0){//prob mistake here
+		int opponent = 0;
+		if(player == 2){
+			opponent = 1;
+		}else{
+			opponent = 2;
+		}
+		while(b.board[y][x-left]==player || b.board[y][x-left]==b.emptyCell || left < b.N || x-left >= 0){//prob mistake here
 			if(b.board[y][x-left]==player){
 				samedisc++;
+				
+			}else if(b.board[y][x-left]!=player && b.board[y][x-left]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x-left,y,opponent,b,false);
 			}
 			left++;
 		}
@@ -296,64 +316,87 @@ public class FCJSPlayer
 		while(b.board[y][x+right]==player || b.board[y][x+right]==b.emptyCell || right < b.N || x+right < b.width){//prob mistake here
 			if(b.board[y][x+right]==player){
 				samedisc++;
+			}else if(b.board[y][x-left]!=player && b.board[y][x-left]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x+right,y,opponent,b,false);
 			}
 			right++;
 		}
 		right--;
 		if((left + right) < (b.N - 1)){
-			return 0;
+			return eva;
 		}
 		eva = left + right - 3 + samedisc;
 		return eva;
 	}
 	
-	int evaldiag(int x, int y, int player, Board b){
+	int evaldiag(int x, int y, int player, Board b,Boolean opp){
 		int eva = 0;
 		int samedisc = 0;
 		int diagl = 1;
-		while(b.board[y+diagl][x-diagl]==player && b.board[y+diagl][x-diagl]==b.emptyCell || diagl < b.N || (x-diagl >= 0 && y+diagl<b.height)){//prob mistake here
+		int opponent = 0;
+		if(player == 2){
+			opponent = 1;
+		}else{
+			opponent = 2;
+		}
+		while(b.board[y+diagl][x-diagl]==player || b.board[y+diagl][x-diagl]==b.emptyCell || diagl < b.N || (x-diagl >= 0 && y+diagl<b.height)){//prob mistake here
 			if(b.board[y+diagl][x-diagl]==player){
 				samedisc++;
+			}else if(b.board[y+diagl][x-diagl]!=player && b.board[y+diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x-diagl,y+diagl,opponent,b,false);
 			}
+			
 			diagl++;
 		}
 		diagl--;
 		int diagr = 1;
-		while(b.board[y+diagr][x-diagr]==player && b.board[y+diagr][x-diagr]==b.emptyCell || diagr < b.N || (x+diagr < b.width  && y-diagr>=0)){//prob mistake here
-			if(b.board[y+diagr][x-diagr]==player){
+		while(b.board[y-diagr][x+diagr]==player || b.board[y-diagr][x+diagr]==b.emptyCell || diagr < b.N || (x+diagr < b.width  && y-diagr>=0)){//prob mistake here
+			if(b.board[y-diagr][x+diagr]==player){
 				samedisc++;
+			}else if(b.board[y-diagr][x+diagr]!=player && b.board[y-diagr][x+diagr]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x+diagr,y-diagr,opponent,b,false);
 			}
 			diagr++;
 		}
 		diagr--;
 		if((diagl + diagr) < b.N-1){
-			return 0;
+			return eva;
 		}
 		eva = diagl + diagr - 3 + samedisc;	
 		return eva;		
 	}
 	
-	int evaldiag2(int x, int y, int player, Board b){
+	int evaldiag2(int x, int y, int player, Board b,Boolean opp){
 		int eva = 0;
 		int samedisc = 0;
 		int diagl = 1;
-		while(b.board[y-diagl][x-diagl]==player && b.board[y-diagl][x-diagl]==b.emptyCell || diagl < b.N || (x-diagl >= 0 && y-diagl>=0)){//prob mistake here
+		int opponent = 0;
+		if(player == 2){
+			opponent = 1;
+		}else{
+			opponent = 2;
+		}
+		while(b.board[y-diagl][x-diagl]==player || b.board[y-diagl][x-diagl]==b.emptyCell || diagl < b.N || (x-diagl >= 0 && y-diagl>=0)){//prob mistake here
 			if(b.board[y-diagl][x-diagl]==player){
 				samedisc++;
+			}else if(b.board[y-diagl][x-diagl]!=player && b.board[y-diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x-diagl,y-diagl,opponent,b,false);
 			}
 			diagl++;
 		}
 		diagl--;
 		int diagr = 1;
-		while(b.board[y+diagr][x-diagr]==player && b.board[y+diagr][x-diagr]==b.emptyCell || diagr < b.N || (x+diagr < b.width  && y+diagl<b.height)){//prob mistake here
-			if(b.board[y+diagr][x-diagr]==player){
+		while(b.board[y+diagr][x+diagr]==player || b.board[y+diagr][x+diagr]==b.emptyCell || diagr < b.N || (x+diagr < b.width  && y+diagl<b.height)){//prob mistake here
+			if(b.board[y+diagr][x+diagr]==player){
 				samedisc++;
+			}else if(b.board[y+diagl][x+diagl]!=player && b.board[y-diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x+diagl,y+diagl,opponent,b,false);
 			}
 			diagr++;
 		}
 		diagr--;
 		if((diagl + diagr) < b.N-1){
-			return 0;
+			return eva;
 		}
 		eva = diagl + diagr - 3 + samedisc;	
 		return eva;	
