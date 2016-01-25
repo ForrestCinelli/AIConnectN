@@ -39,7 +39,7 @@ public class FCJSPlayer
 	public static final int DROP = 1;
 	
 	//params - these are things we can change to tweak the behavior of our player
-	public final double timeBuffer = 0.5; //in seconds
+	public final double timeBuffer = 1; //in seconds
 	public final double tieVal = 0.0;
 	
 	public FCJSPlayer()
