@@ -217,7 +217,163 @@ public class FCJSPlayer
 	 * */
 	public int eval(Board b)
 	{
-		return 0;
+		int eva = 0;
+		for(int i=0;i<b.numOfDiscsInColumn[i];i++)
+		{
+			for(int j=0;j<b.width;j++)
+			{
+				eva += evalpos(j,i,b);//collect utility of all discs on the board
+			}
+		}
+		
+		return eva;
+	}
+	
+	public int evalpos(int x, int y, Board b)
+	{
+		int eva = 0;
+		eva = evalverti(x,y,playerNumber,b,true)+evalhori(x,y,playerNumber,b,true)+evaldiag(x,y,playerNumber,b,true)+evaldiag2(x,y,playerNumber,b,true);
+		return eva;
+	}
+	int evalverti(int x, int y,int player, Board b,Boolean opp)
+	{
+		int eva = 0;
+		int samedisc = 0;
+		int up = 1;
+		while((b.board[y+up][x]==player || b.board[y+up][x]==b.emptyCell) && up < b.N && y+up < b.height){//prob mistake here
+			if(b.board[y+up][x]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y+up][x]!=player && b.board[y+up][x]==b.emptyCell && opp){//reward block opponent
+				eva += evalverti(x,y+up,opponentNumber,b,false);
+			}*/
+			up++;
+		}
+		up--;//up(empty cell) is actually one less
+		int down = 1;
+		while(y-down >= 0 && (b.board[y-down][x]==player && b.board[y-down][x]==b.emptyCell) && up < b.N){//prob mistake here
+			if(b.board[y-down][x]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y+up][x]!=player && b.board[y+up][x]==b.emptyCell && opp){//reward block opponent
+				eva += evalverti(x,y-down,opponentNumber,b,false);
+			}*/
+			down++;
+		}
+		down--;
+		if((up + down) < (b.N - 1)){
+			return eva;
+		}
+		eva = up + down - 3 + samedisc;
+		return eva;
+	}
+	
+	int evalhori(int x, int y,int player,Board b,Boolean opp)
+	{
+		int eva = 0;
+		int samedisc = 0;
+		int left = 1;
+		while(x-left >= 0 && (b.board[y][x-left]==player || b.board[y][x-left]==b.emptyCell) && left < b.N)
+		{//prob mistake here
+			if(b.board[y][x-left]==player)
+			{
+				samedisc++;
+				
+			}/*else if(b.board[y][x-left]!=player && b.board[y][x-left]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x-left,y,opponentNumber,b,false);
+			}*/
+			left++;
+		}
+		left--;
+		int right = 1;
+		while(x+right < b.width && (b.board[y][x+right]==player || b.board[y][x+right]==b.emptyCell) && right < b.N)
+		{//prob mistake here
+			if(b.board[y][x+right]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y][x-left]!=player && b.board[y][x-left]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x+right,y,opponentNumber,b,false);
+			}*/
+			right++;
+		}
+		right--;
+		if((left + right) < (b.N - 1))
+		{
+			return eva;
+		}
+		eva = left + right - 3 + samedisc;
+		return eva;
+		
+	}
+	int evaldiag(int x, int y,int player,Board b,Boolean opp)
+	{
+		int eva = 0;
+		int samedisc = 0;
+		int diagl = 1;
+		while((x-diagl >= 0 && y+diagl<b.height) && (b.board[y+diagl][x-diagl]==player || b.board[y+diagl][x-diagl]==b.emptyCell) && diagl < b.N)
+		{//prob mistake here
+			if(b.board[y+diagl][x-diagl]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y+diagl][x-diagl]!=player && b.board[y+diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x-diagl,y+diagl,opponentNumber,b,false);
+			}*/
+			
+			diagl++;
+		}
+		diagl--;
+		int diagr = 1;
+		while((x+diagr < b.width  && y-diagr>=0) && (b.board[y-diagr][x+diagr]==player || b.board[y-diagr][x+diagr]==b.emptyCell) && diagr < b.N)
+		{//prob mistake here
+			if(b.board[y-diagr][x+diagr]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y-diagr][x+diagr]!=player && b.board[y-diagr][x+diagr]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x+diagr,y-diagr,opponentNumber,b,false);
+			}*/
+			diagr++;
+		}
+		diagr--;
+		if((diagl + diagr) < b.N-1)
+		{
+			return eva;
+		}
+		eva = diagl + diagr - 3 + samedisc;	
+		return eva;		
+		
+	}
+	int evaldiag2(int x, int y,int player,Board b,Boolean opp)
+	{
+		int eva = 0;
+		int samedisc = 0;
+		int diagl = 1;
+		while((x-diagl >= 0 && y-diagl>=0) && (b.board[y-diagl][x-diagl]==player || b.board[y-diagl][x-diagl]==b.emptyCell) && diagl < b.N){//prob mistake here
+			if(b.board[y-diagl][x-diagl]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y-diagl][x-diagl]!=player && b.board[y-diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
+				eva += evalhori(x-diagl,y-diagl,opponentNumber,b,false);
+			}*/
+			diagl++;
+		}
+		diagl--;
+		int diagr = 1;
+		while((x+diagr < b.width  && y+diagl<b.height) && (b.board[y+diagr][x+diagr]==player || b.board[y+diagr][x+diagr]==b.emptyCell) && diagr < b.N){//prob mistake here
+			if(b.board[y+diagr][x+diagr]==player)
+			{
+				samedisc++;
+			}/*else if(b.board[y+diagl][x+diagl]!=player && b.board[y-diagl][x-diagl]==b.emptyCell && opp)
+			{//reward block opponent
+				eva += evalhori(x+diagl,y+diagl,opponentNumber,b,false);
+			}*/
+			diagr++;
+		}
+		diagr--;
+		if((diagl + diagr) < b.N-1){
+			return eva;
+		}
+		eva = diagl + diagr - 3 + samedisc;	
+		return eva;	
 	}
 	
 	//this whole thing reads the input and updates info in our player appropriately. 
