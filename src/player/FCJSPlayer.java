@@ -21,22 +21,22 @@ import java.util.Random;
 
 public class FCJSPlayer 
 {
-	public String playerName = "FCJS";
-	public int playerNumber;
-	public int opponentNumber;
-	public Board board; //current state of board
-	BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
-	boolean first_move=false;
-	int timeLimit; //in seconds
-	long turnStart; //in nanoseconds
-	List<String> currentBestMove = Arrays.asList("0 1".split(" ")); //move formatting: first number is column to move in. (the first column is numbered 0, and the last is width - 1). Second number is move type: 0 means pop out and 1 means drop in. 
-	double currentBestMoveValue = Double.NEGATIVE_INFINITY;
-	BoardStateNode bs;
-	boolean weHaveUsedPopOut = false;
-	boolean theyHaveUsedPopOut = false;
-	PrintWriter writer;
-	final int POPOUT = 0;
-	final int DROP = 1;
+	public static String playerName = "FCJS";
+	public static int playerNumber;
+	public static int opponentNumber;
+	public static Board board; //current state of board
+	public static BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+	public static boolean first_move=false;
+	public static int timeLimit; //in seconds
+	public static long turnStart; //in nanoseconds
+	public static List<String> currentBestMove = Arrays.asList("0 1".split(" ")); //move formatting: first number is column to move in. (the first column is numbered 0, and the last is width - 1). Second number is move type: 0 means pop out and 1 means drop in. 
+	public static double currentBestMoveValue = Double.NEGATIVE_INFINITY;
+	private static BoardStateNode bs;
+	public static boolean weHaveUsedPopOut = false;
+	public static boolean theyHaveUsedPopOut = false;
+	private static PrintWriter writer;
+	public static final int POPOUT = 0;
+	public static final int DROP = 1;
 	
 	//params - these are things we can change to tweak the behavior of our player
 	public final double timeBuffer = 0.5; //in seconds
@@ -58,9 +58,9 @@ public class FCJSPlayer
 	}
 	
 	//given a move, apply it to our board. Should happen after opponent declares move but before we begin searching the game tree and again after a move is returned.
-	public void applyMove(List<String> move, Board b, int player)
+	public static void applyMove(List<String> move, Board b, int player)
 	{
-		if (Integer.parseInt(move.get(1)) == this.DROP) //if move is a drop in
+		if (Integer.parseInt(move.get(1)) == DROP) //if move is a drop in
 		{
 			b.dropADiscFromTop(Integer.parseInt(move.get(0)), opponentNumber);
 		}
@@ -183,16 +183,16 @@ public class FCJSPlayer
 	
 	/* should be ready to return a move at any moment.*/
 	//this needs to be implemented differently; to allow for time limiting, and also to not waste time updating our own board before the move is sent out.
-	public void makeNextMove()
+	public static void makeNextMove()
 	{
-		this.writer.println("Getting ready to make a move!!");
-		this.writer.println(String.join(" ", this.currentBestMove));
-		System.out.println(String.join(" ", this.currentBestMove));
+		writer.println("Getting ready to make a move!!");
+		writer.println(String.join(" ", currentBestMove));
+		System.out.println(String.join(" ", currentBestMove));
 		System.out.flush();
-		applyMove(currentBestMove, this.board, this.playerNumber);
-		if (!this.weHaveUsedPopOut && this.currentBestMove.get(0).equals(Integer.toString(this.POPOUT))) this.weHaveUsedPopOut = true;
-		this.currentBestMoveValue = Double.NEGATIVE_INFINITY;
-		this.writer.println(this.board.toString());
+		applyMove(currentBestMove, board, playerNumber);
+		if (!weHaveUsedPopOut && currentBestMove.get(0).equals(Integer.toString(POPOUT))) weHaveUsedPopOut = true;
+		currentBestMoveValue = Double.NEGATIVE_INFINITY;
+		writer.println(board.toString());
 		writer.flush();
 	}
 	
@@ -228,12 +228,21 @@ public class FCJSPlayer
 		List<String> ls=Arrays.asList(s.split(" "));
 		if(ls.size()==2) //indicates that opponent made a move
 		{
+			new java.util.Timer().schedule( 
+			        new java.util.TimerTask() {
+			            @Override
+			            public void run() {
+			            	FCJSPlayer.makeNextMove();
+			            }
+			        }, 
+			        (int)(this.timeLimit * 1000 - (this.timeBuffer * 1000))
+			);
 			this.turnStart = System.nanoTime();
 			if (!this.theyHaveUsedPopOut && ls.get(0).equals(Integer.toString(this.POPOUT))) this.theyHaveUsedPopOut = true;
 			applyMove(ls, board, this.opponentNumber);
 			pruneAfterMove(ls);
-			search(); //should terminate before time runs out
-			this.makeNextMove();
+			search(); //should terminate before time runs out, but it's ok if it goes a little over.
+			
 		}
 		else if(ls.size()==1) //indicates that game ended
 		{
