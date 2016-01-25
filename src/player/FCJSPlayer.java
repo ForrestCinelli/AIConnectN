@@ -113,16 +113,16 @@ public class FCJSPlayer
 			if (b.canDropADiscFromTop(j, playerNum))
 			{
 				ArrayList<String> move = new ArrayList<String>(2);
-				move.add(1, Integer.toString(j));
-				move.add(0, Integer.toString(this.DROP));
+				move.add(0, Integer.toString(j));
+				move.add(1, Integer.toString(this.DROP));
 				output.add(move);
 			}
 			//pop out
 			if (canPopOut(playerNum) && b.canRemoveADiscFromBottom(j, playerNum))
 			{
 				ArrayList<String> move = new ArrayList<String>(2);
-				move.add(1, Integer.toString(j));
-				move.add(0, Integer.toString(this.POPOUT));
+				move.add(0, Integer.toString(j));
+				move.add(1, Integer.toString(this.POPOUT));
 				output.add(move);
 			}
 		}
