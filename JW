@@ -149,7 +149,7 @@ public class FCJSPlayer
 		}
 		if (depth == 0)
 		{
-			return eval(node);
+			return eval(node.b);
 		}
 		if (isMax)
 		{
@@ -238,38 +238,32 @@ public class FCJSPlayer
 	 * rank spaces, then try to control the best spaces. Spaces with more ways to win are ranked higher. Spaces whose ways to win are easier spaces to get to are ranked higher.
 	 * make the heuristic like to force opponent moves as a way of controlling the game
 	 * */
-	public int eval(BoardStateNode bsn)
-	{	
+	public int eval(Board b)
+	{
 		int eva = 0;
-
-		int x = Integer.parseInt(bsn.move.get(0));
-		int dropOrPop = Integer.parseInt(bsn.move.get(1)); //0 for pop
-		if(dropOrPop == 1){//drop
-			int y = bsn.b.numOfDiscsInColumn[x] - 1;
-			eva = evalverti(x,y,bsn.currPlayer,bsn.b,true)+evalhori(x,y,bsn.currPlayer,bsn.b,true)+evaldiag(x,y,bsn.currPlayer,bsn.b,true)+evaldiag2(x,y,bsn.currPlayer,bsn.b,true);
-			return eva;
-		}else{//pop
-			return 0;
+		for(int i=0;i<b.numOfDiscsInColumn[i];i++){
+			for(int j=0;j<b.width;j++){
+				eva += evalpos(j,i,b);//collect utility of all discs on the board
+			}
 		}
+		
+		return eva;
 	}
 	
-	int evalverti(int x, int y, int player, Board b, Boolean opp){
-		
+	public int evalpos(int x, int y, Board b){
+		int eva = 0;
+		eva = evalverti(x,y,playerNumber,b,true)+evalhori(x,y,playerNumber,b,true)+evaldiag(x,y,playerNumber,b,true)+evaldiag2(x,y,playerNumber,b,true);
+		return eva;
+	}
+	int evalverti(int x, int y,int player, Board b,Boolean opp){
 		int eva = 0;
 		int samedisc = 0;
 		int up = 1;
-		int opponent = 0;
-		if(player == 2){
-			opponent = 1;
-		}else{
-			opponent = 2;
-		}
-		
 		while(b.board[y+up][x]==player || b.board[y+up][x]==b.emptyCell || up < b.N || y+up < b.height){//prob mistake here
 			if(b.board[y+up][x]==player){
 				samedisc++;
 			}else if(b.board[y+up][x]!=player && b.board[y+up][x]==b.emptyCell && opp){//reward block opponent
-				eva += evalverti(x,y+up,opponent,b,false);
+				eva += evalverti(x,y+up,opponentNumber,b,false);
 			}
 			up++;
 		}
@@ -279,7 +273,7 @@ public class FCJSPlayer
 			if(b.board[y-down][x]==player){
 				samedisc++;
 			}else if(b.board[y+up][x]!=player && b.board[y+up][x]==b.emptyCell && opp){//reward block opponent
-				eva += evalverti(x,y-down,opponent,b,false);
+				eva += evalverti(x,y-down,opponentNumber,b,false);
 			}
 			down++;
 		}
@@ -291,23 +285,16 @@ public class FCJSPlayer
 		return eva;
 	}
 	
-	int evalhori(int x, int y, int player, Board b,Boolean opp){
-		
+	int evalhori(int x, int y,int player,Board b,Boolean opp){
 		int eva = 0;
 		int samedisc = 0;
 		int left = 1;
-		int opponent = 0;
-		if(player == 2){
-			opponent = 1;
-		}else{
-			opponent = 2;
-		}
 		while(b.board[y][x-left]==player || b.board[y][x-left]==b.emptyCell || left < b.N || x-left >= 0){//prob mistake here
 			if(b.board[y][x-left]==player){
 				samedisc++;
 				
 			}else if(b.board[y][x-left]!=player && b.board[y][x-left]==b.emptyCell && opp){//reward block opponent
-				eva += evalhori(x-left,y,opponent,b,false);
+				eva += evalhori(x-left,y,opponentNumber,b,false);
 			}
 			left++;
 		}
@@ -317,7 +304,7 @@ public class FCJSPlayer
 			if(b.board[y][x+right]==player){
 				samedisc++;
 			}else if(b.board[y][x-left]!=player && b.board[y][x-left]==b.emptyCell && opp){//reward block opponent
-				eva += evalhori(x+right,y,opponent,b,false);
+				eva += evalhori(x+right,y,opponentNumber,b,false);
 			}
 			right++;
 		}
@@ -327,23 +314,17 @@ public class FCJSPlayer
 		}
 		eva = left + right - 3 + samedisc;
 		return eva;
+		
 	}
-	
-	int evaldiag(int x, int y, int player, Board b,Boolean opp){
+	int evaldiag(int x, int y,int player,Board b,Boolean opp){
 		int eva = 0;
 		int samedisc = 0;
 		int diagl = 1;
-		int opponent = 0;
-		if(player == 2){
-			opponent = 1;
-		}else{
-			opponent = 2;
-		}
 		while(b.board[y+diagl][x-diagl]==player || b.board[y+diagl][x-diagl]==b.emptyCell || diagl < b.N || (x-diagl >= 0 && y+diagl<b.height)){//prob mistake here
 			if(b.board[y+diagl][x-diagl]==player){
 				samedisc++;
 			}else if(b.board[y+diagl][x-diagl]!=player && b.board[y+diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
-				eva += evalhori(x-diagl,y+diagl,opponent,b,false);
+				eva += evalhori(x-diagl,y+diagl,opponentNumber,b,false);
 			}
 			
 			diagl++;
@@ -354,7 +335,7 @@ public class FCJSPlayer
 			if(b.board[y-diagr][x+diagr]==player){
 				samedisc++;
 			}else if(b.board[y-diagr][x+diagr]!=player && b.board[y-diagr][x+diagr]==b.emptyCell && opp){//reward block opponent
-				eva += evalhori(x+diagr,y-diagr,opponent,b,false);
+				eva += evalhori(x+diagr,y-diagr,opponentNumber,b,false);
 			}
 			diagr++;
 		}
@@ -364,23 +345,17 @@ public class FCJSPlayer
 		}
 		eva = diagl + diagr - 3 + samedisc;	
 		return eva;		
+		
 	}
-	
-	int evaldiag2(int x, int y, int player, Board b,Boolean opp){
+	int evaldiag2(int x, int y,int player,Board b,Boolean opp){
 		int eva = 0;
 		int samedisc = 0;
 		int diagl = 1;
-		int opponent = 0;
-		if(player == 2){
-			opponent = 1;
-		}else{
-			opponent = 2;
-		}
 		while(b.board[y-diagl][x-diagl]==player || b.board[y-diagl][x-diagl]==b.emptyCell || diagl < b.N || (x-diagl >= 0 && y-diagl>=0)){//prob mistake here
 			if(b.board[y-diagl][x-diagl]==player){
 				samedisc++;
 			}else if(b.board[y-diagl][x-diagl]!=player && b.board[y-diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
-				eva += evalhori(x-diagl,y-diagl,opponent,b,false);
+				eva += evalhori(x-diagl,y-diagl,opponentNumber,b,false);
 			}
 			diagl++;
 		}
@@ -390,7 +365,7 @@ public class FCJSPlayer
 			if(b.board[y+diagr][x+diagr]==player){
 				samedisc++;
 			}else if(b.board[y+diagl][x+diagl]!=player && b.board[y-diagl][x-diagl]==b.emptyCell && opp){//reward block opponent
-				eva += evalhori(x+diagl,y+diagl,opponent,b,false);
+				eva += evalhori(x+diagl,y+diagl,opponentNumber,b,false);
 			}
 			diagr++;
 		}
@@ -401,8 +376,6 @@ public class FCJSPlayer
 		eva = diagl + diagr - 3 + samedisc;	
 		return eva;	
 	}
-	
-	
 	
 	//this whole thing reads the input and updates info in our player appropriately. 
 	public void processInput() throws IOException
@@ -494,3 +467,4 @@ public class FCJSPlayer
 		
 	} 
 }
+
