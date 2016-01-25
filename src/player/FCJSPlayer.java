@@ -240,7 +240,7 @@ public class FCJSPlayer
 		int eva = 0;
 		int samedisc = 0;
 		int up = 1;
-		while((b.board[y+up][x]==player || b.board[y+up][x]==b.emptyCell) && up < b.N && y+up < b.height){//prob mistake here
+		while(y+up < b.height && (b.board[y+up][x]==player || b.board[y+up][x]==b.emptyCell) && up < b.N){//prob mistake here
 			if(b.board[y+up][x]==player)
 			{
 				samedisc++;
