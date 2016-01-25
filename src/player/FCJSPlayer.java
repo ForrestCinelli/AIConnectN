@@ -39,7 +39,7 @@ public class FCJSPlayer
 	final int DROP = 1;
 	
 	//params - these are things we can change to tweak the behavior of our player
-	public final double timeBuffer = 0.1; //in seconds
+	public final double timeBuffer = 0.5; //in seconds
 	public final double tieVal = 0.0;
 	
 	public FCJSPlayer()
@@ -68,8 +68,6 @@ public class FCJSPlayer
 		{
 			b.removeADiscFromBottom(Integer.parseInt(move.get(0)));
 		}
-		this.writer.println(this.board.toString());
-		writer.flush();
 	}
 	
 	public double timeRemaining()
@@ -85,7 +83,7 @@ public class FCJSPlayer
 		{
 			for (ArrayList<String> move : this.getValidMoves(board, this.playerNumber)) //for each valid move we can take
 			{
-				double val = minimax(this.bs, depth, true);
+				double val = minimax(this.bs, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 1);
 				if (val > this.currentBestMoveValue)
 				{
 					this.currentBestMove = (List<String>) move.clone(); //clone is used to make the item persist after the for loop terminates. Idk if this is necessary or not.
@@ -129,7 +127,8 @@ public class FCJSPlayer
 		return output;
 	}
 	
-	public double minimax(BoardStateNode node, int depth, boolean isMax)
+	/*minimax with alpha beta pruning*/
+	public double minimax(BoardStateNode node, int depth, double beta, double alpha, int isMax)
 	{
 		int result = node.b.isConnectN();
 		if (result != -1)
@@ -149,56 +148,37 @@ public class FCJSPlayer
 		}
 		if (depth == 0)
 		{
-			return eval(node.b);
+			return isMax * eval(node.b);
 		}
-		if (isMax)
+		double bestValue = Double.NEGATIVE_INFINITY;
+		for (List<String> move: this.getValidMoves(node.b, isMax == 1 ? this.playerNumber : this.opponentNumber))
 		{
-			double bestValue = Double.NEGATIVE_INFINITY;
-			for (List<String> move: this.getValidMoves(node.b, isMax ? this.playerNumber : this.opponentNumber))
+			//make child board, 
+			Board newB = new Board(this.board.height, this.board.width, this.board.N);
+			for (int i = 0; i < node.b.board.length; i++) //for each row
 			{
-				//make child board, 
-				Board newB = new Board(this.board.height, this.board.width, this.board.N);
-				for (int i = 0; i < node.b.board.length; i++) //for each row
-				{
-					System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
-				}
-				applyMove(move, newB, this.playerNumber);
-				
-				BoardStateNode newChild = new BoardStateNode(newB, move, this.playerNumber);
-				node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
-				 
-				double val = minimax(newChild, depth - 1, !isMax);
-				if (bestValue < val)
-				{
-					bestValue = val;
-				}
+				System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
 			}
-			return bestValue;
-		}
-		else //is min
-		{
-			double bestValue = Double.POSITIVE_INFINITY;
-			for (List<String> move: this.getValidMoves(node.b, isMax ? this.playerNumber : this.opponentNumber))
+			applyMove(move, newB, this.playerNumber);
+			
+			BoardStateNode newChild = new BoardStateNode(newB, move, this.playerNumber);
+			node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
+			 
+			double val = -minimax(newChild, depth - 1, -1 * beta, -1 * alpha, -1 * isMax);
+			if (bestValue < val)
 			{
-				//make child board, 
-				Board newB = new Board(this.board.height, this.board.width, this.board.N);
-				for (int i = 0; i < node.b.board.length; i++) //for each row
-				{
-					System.arraycopy(node.b.board[i], 0, newB.board[i], 0, node.b.board[i].length); //copy the col
-				}
-				applyMove(move, newB, this.opponentNumber);
-				
-				BoardStateNode newChild = new BoardStateNode(newB, move, this.opponentNumber);
-				node.children.add(newChild); //TODO: currently this ignores existing stuff. We should fix that.
-				 
-				double val = minimax(newChild, depth - 1, !isMax);
-				if (bestValue > val)
-				{
-					bestValue = val;
-				}
+				bestValue = val;
 			}
-			return bestValue;
+			if (alpha < val)
+			{
+				alpha = val;
+			}
+			if (alpha >= beta)
+			{
+				break;
+			}
 		}
+		return bestValue;
 	}
 	
 	/* should be ready to return a move at any moment.*/
@@ -206,17 +186,14 @@ public class FCJSPlayer
 	public void makeNextMove()
 	{
 		this.writer.println("Getting ready to make a move!!");
-		this.writer.flush();
-		System.out.println(String.join(" ", this.currentBestMove));  //first move
+		this.writer.println(String.join(" ", this.currentBestMove));
+		System.out.println(String.join(" ", this.currentBestMove));
+		System.out.flush();
 		applyMove(currentBestMove, this.board, this.playerNumber);
 		if (!this.weHaveUsedPopOut && this.currentBestMove.get(0).equals(Integer.toString(this.POPOUT))) this.weHaveUsedPopOut = true;
 		this.currentBestMoveValue = Double.NEGATIVE_INFINITY;
-	}
-	
-	/* Does alpha beta pruning */
-	public void prune()
-	{
-	
+		this.writer.println(this.board.toString());
+		writer.flush();
 	}
 	
 	/* After player hears about opponent move, prune each part of the decision tree that is no longer reachable since the opponent chose a different move

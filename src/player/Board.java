@@ -394,7 +394,7 @@ public class Board {
 		 int tmp_winner= this.checkDiagonally1();
 		 System.out.println("Winner: "+tmp_winner);	
 	 } 
-	 
+/*	 
 	 public static void main(String [] arg){
 		 Board b=new Board(6,7,3);
 
@@ -403,5 +403,5 @@ public class Board {
 //		 b.test2();
 //       b.test3();
  //        b.test5();
-	 }
+	 }*/
 }
